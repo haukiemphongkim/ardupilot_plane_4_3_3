@@ -17,7 +17,7 @@
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
-#include <AP_ADSB/AP_ADSB.h>
+//#include <AP_ADSB/AP_ADSB.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
@@ -205,7 +205,7 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
-#if HAL_WITH_MCU_MONITORING
+/*#if HAL_WITH_MCU_MONITORING
 // report MCU voltage/temperature status
 void GCS_MAVLINK::send_mcu_status(void)
 {
@@ -220,7 +220,7 @@ void GCS_MAVLINK::send_mcu_status(void)
                                 hal.analogin->mcu_voltage_min() * 1000,
                                 hal.analogin->mcu_voltage_max() * 1000);
 }
-#endif
+#endif */
 
 // returns the battery remaining percentage if valid, -1 otherwise
 int8_t GCS_MAVLINK::battery_remaining_pct(const uint8_t instance) const {
@@ -902,9 +902,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN,     MSG_ORIGIN},
         { MAVLINK_MSG_ID_SYS_STATUS,            MSG_SYS_STATUS},
         { MAVLINK_MSG_ID_POWER_STATUS,          MSG_POWER_STATUS},
-#if HAL_WITH_MCU_MONITORING
+/*#if HAL_WITH_MCU_MONITORING
         { MAVLINK_MSG_ID_MCU_STATUS,            MSG_MCU_STATUS},
-#endif
+#endif*/
         { MAVLINK_MSG_ID_MEMINFO,               MSG_MEMINFO},
         { MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, MSG_NAV_CONTROLLER_OUTPUT},
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
@@ -943,10 +943,10 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN},
         { MAVLINK_MSG_ID_BATTERY2,              MSG_BATTERY2},
         { MAVLINK_MSG_ID_CAMERA_FEEDBACK,       MSG_CAMERA_FEEDBACK},
-#if HAL_MOUNT_ENABLED
+/*#if HAL_MOUNT_ENABLED
         { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
         { MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE},
-#endif
+#endif */
 #if AP_OPTICALFLOW_ENABLED
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
 #endif
@@ -961,7 +961,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_ATTITUDE_TARGET,       MSG_ATTITUDE_TARGET},
         { MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT,  MSG_POSITION_TARGET_GLOBAL_INT},
         { MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED,  MSG_POSITION_TARGET_LOCAL_NED},
-        { MAVLINK_MSG_ID_ADSB_VEHICLE,          MSG_ADSB_VEHICLE},
+       // { MAVLINK_MSG_ID_ADSB_VEHICLE,          MSG_ADSB_VEHICLE},
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
         { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
@@ -986,9 +986,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_AIS_ENABLED
         { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
 #endif
-#if HAL_ADSB_ENABLED
+/*#if HAL_ADSB_ENABLED
         { MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_STATUS, MSG_UAVIONIX_ADSB_OUT_STATUS},
-#endif
+#endif  */
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3605,7 +3605,7 @@ void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
 #endif
 }
 
-void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
+/*void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
 {
 #if HAL_ADSB_ENABLED
     AP_ADSB *adsb = AP::ADSB();
@@ -3613,7 +3613,7 @@ void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
         adsb->handle_message(chan, msg);
     }
 #endif
-}
+}*/
 
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
@@ -3853,13 +3853,13 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_osd_param_config(msg);
         break;
 
-    case MAVLINK_MSG_ID_ADSB_VEHICLE:
+   /* case MAVLINK_MSG_ID_ADSB_VEHICLE:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL:
         handle_adsb_message(msg);
-        break;
+        break;*/
 
     case MAVLINK_MSG_ID_LANDING_TARGET:
         handle_landing_target(msg);
@@ -4602,7 +4602,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_battery_reset(packet);
         break;
         
-#if HAL_ADSB_ENABLED
+/*#if HAL_ADSB_ENABLED
     case MAV_CMD_DO_ADSB_OUT_IDENT:
         if ((AP::ADSB() != nullptr) && AP::ADSB()->ident_start()) {
             result = MAV_RESULT_ACCEPTED;
@@ -4611,7 +4611,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
             result = MAV_RESULT_FAILED;
         }
         break;
-#endif
+#endif */
 
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
@@ -5285,7 +5285,7 @@ void GCS_MAVLINK::send_water_depth() const
 }
 #endif
 
-#if HAL_ADSB_ENABLED
+/*#if HAL_ADSB_ENABLED
 void GCS_MAVLINK::send_uavionix_adsb_out_status() const
 {
     AP_ADSB *adsb = AP::ADSB();
@@ -5293,9 +5293,9 @@ void GCS_MAVLINK::send_uavionix_adsb_out_status() const
         adsb->send_adsb_out_status(chan);
     }
 }
-#endif
+#endif */
 
-void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
+/*void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
 {
     // get attitude
     const AP_AHRS &ahrs = AP::ahrs();
@@ -5338,8 +5338,8 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
         0,      // velocity estimated delay in micros
         rate_bf_targets.z,// feed forward angular velocity z
         est_status_flags,   // estimator status
-        0);     // landed_state (see MAV_LANDED_STATE)
-}
+        0);     // landed_state (see MAV_LANDED_STATE) 
+} */
 
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
 {
@@ -5507,12 +5507,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_gimbal_device_attitude_status();
 #endif
         break;
-    case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
+    /*case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
 #if HAL_MOUNT_ENABLED
         CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
         send_autopilot_state_for_gimbal_device();
 #endif
-        break;
+        break;*/
 
     case MSG_OPTICAL_FLOW:
 #if AP_OPTICALFLOW_ENABLED
@@ -5541,12 +5541,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_power_status();
         break;
 
-    case MSG_MCU_STATUS:
+    /*case MSG_MCU_STATUS:
 #if HAL_WITH_MCU_MONITORING
         CHECK_PAYLOAD_SIZE(MCU_STATUS);
         send_mcu_status();
 #endif
-        break;
+        break;*/
 
     case MSG_RC_CHANNELS:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
@@ -5711,12 +5711,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     }
 
 
-    case MSG_UAVIONIX_ADSB_OUT_STATUS:
+  /*  case MSG_UAVIONIX_ADSB_OUT_STATUS:
 #if HAL_ADSB_ENABLED
         CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
         send_uavionix_adsb_out_status();
 #endif
-        break;
+        break; */
 
     default:
         // try_send_message must always at some stage return true for

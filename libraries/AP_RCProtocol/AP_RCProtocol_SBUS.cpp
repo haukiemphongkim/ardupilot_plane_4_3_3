@@ -58,6 +58,8 @@
 #define SBUS_FLAGS_BYTE		23
 #define SBUS_FAILSAFE_BIT	3
 #define SBUS_FRAMELOST_BIT	2
+#define RSSI_AVG_SIZE            96// hau them
+
 
 /* define range mapping here, -+100% -> 1000..2000 */
 #define SBUS_RANGE_MIN 200
@@ -83,6 +85,21 @@ AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted,
 {}
 
 // decode a full SBUS frame
+
+// hau them
+unsigned long int m_avg_buffer[3] = {0,0,0};
+unsigned char     m_avg_sum       = 0;
+unsigned char     m_avg_last_bit  = 0;
+
+
+
+unsigned char     m_avg_first_bit = 0;
+unsigned int      m_avg_RSSI      = 1000;
+unsigned char  _cntFrames    = 0;
+unsigned char  _lostFrames   = 0;
+//unsigned int   _RSSI         = 1000;
+// het hau them 
+
 bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
                                      bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values)
 {
@@ -93,12 +110,14 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
 
     switch (frame[24]) {
     case 0x00:
+        _cntFrames++;   //hau them 
+
         /* this is S.BUS 1 */
         break;
     case 0x03:
         /* S.BUS 2 SLOT0: RX battery and external voltage */
         break;
-    case 0x83:
+    case 0x83: 
         /* S.BUS 2 SLOT1 */
         break;
     case 0x43:
@@ -119,23 +138,30 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
         SBUS_TARGET_RANGE, SBUS_RANGE_RANGE, SBUS_SCALE_OFFSET);
 
     /* decode switch channels if data fields are wide enough */
-    if (max_values > 17 && SBUS_INPUT_CHANNELS > 15) {
+
+    	  values[10]= m_avg_RSSI; //  Hau them
+
+    /* hau bo*/ 
+   if (max_values > 17 && SBUS_INPUT_CHANNELS > 15) {
         chancount = 18;
 
         /* channel 17 (index 16) */
-        values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0))?1998:998;
+       // values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0))?1998:998;
         /* channel 18 (index 17) */
-        values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1))?1998:998;
-    }
+        //values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1))?1998:998;
+        
+    } 
+
 
     /* note the number of channels decoded */
     *num_values = chancount;
 
     /* decode and handle failsafe and frame-lost flags */
-    if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FAILSAFE_BIT)) { /* failsafe */
+     if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FAILSAFE_BIT)) { /* failsafe */
         /* report that we failed to read anything valid off the receiver */
         *sbus_failsafe = true;
         *sbus_frame_drop = true;
+		 m_avg_RSSI = 1004; // hau them
     } else if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FRAMELOST_BIT)) { /* a frame was lost */
         /* set a special warning flag
          *
@@ -145,10 +171,32 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
 
         *sbus_failsafe = false;
         *sbus_frame_drop = true;
+		
+		// hau them
+		 _lostFrames++;
+		  m_avg_first_bit = 1;
     } else {
         *sbus_failsafe = false;
         *sbus_frame_drop = false;
+		 m_avg_first_bit = 0;
     }
+	 
+	 	  m_avg_sum += m_avg_first_bit - m_avg_last_bit;
+
+              m_avg_buffer[2] = (m_avg_buffer[2] << 1) | ((m_avg_buffer[1] & 0x80000000) >> 31);
+              m_avg_buffer[1] = (m_avg_buffer[1] << 1) | ((m_avg_buffer[0] & 0x80000000) >> 31);
+              m_avg_buffer[0] = (m_avg_buffer[0] << 1)  |  m_avg_first_bit;
+
+              if ((m_avg_buffer[2] & 0x80000000) == 0 ) m_avg_last_bit = 0;
+              else m_avg_last_bit = 1;
+              m_avg_RSSI = 1100 - m_avg_sum;
+    if (_cntFrames >= RSSI_AVG_SIZE)
+            {
+            //  _RSSI = 1100 - (_lostFrames << 1);
+              _cntFrames  = 0;
+              _lostFrames = 0;
+            }
+			// het hau them
 
     return true;
 }
@@ -183,12 +231,19 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
         // frame
         byte_input.ofs = 0;
     }
+
+    
+
     if (b != 0x0F && byte_input.ofs == 0) {
         // definately not SBUS, missing header byte
+        		 //m_avg_RSSI = 1000; // hau them
+
         return;
     }
     if (byte_input.ofs == 0 && !have_frame_gap) {
         // must have a frame gap before the start of a new SBUS frame
+        		//m_avg_RSSI = 1004; // hau them
+
         return;
     }
 
@@ -204,6 +259,7 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
                         &sbus_failsafe, &sbus_frame_drop, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
             add_input(num_values, values, sbus_failsafe);
+
         }
         byte_input.ofs = 0;
     }
